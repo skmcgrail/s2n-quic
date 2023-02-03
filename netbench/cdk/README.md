@@ -16,7 +16,7 @@ within the s2n-quic directory as the build context.
 The next step is to build the Client and Server Docker images using this [Docker file](https://github.com/aws/s2n-quic/blob/main/netbench/netbench-driver/etc/Dockerfile). This can be done with a command such as 
 
 ```shell
-docker build -t netbench-s2n-quic-client -f ./netbench/netbench-cli/etc/Dockerfile --build-arg DRIVER=client --build-arg ENDPOINT=s2n-quic . 
+docker build -t netbench-s2n-quic-client -f ./netbench/netbench-driver/etc/Dockerfile --build-arg DRIVER=s2n-quic --build-arg ENDPOINT=client .
 ``` 
 within the s2n-quic directory as the build context, changing the build args as necessary.
 
@@ -25,7 +25,7 @@ These images must be pushed to an ECR repo for the CDK application to access the
 Once the Docker images have been set up, the CDK application can be deployed with a command similar to 
 
 ```shell
-cdk deploy --all --require-approval never -c instance-type=t4g.xlarge -c server-ecr-uri=public.ecr.aws/d2r9y8c2/s2n-quic-collector-server-scenario:latest
+cdk deploy --all --require-approval never -c instance-type=t4g.xlarge -c client-ecr-uri=public.ecr.aws/d2r9y8c2/netbench-s2n-quic-client:latest
 ```
 The following parameters are configurable by passing in context variables through the -c flag. The default parameters can also be set within the following [file](https://github.com/aws/s2n-quic/blob/main/netbench/cdk/src/main/java/com/aws/NetbenchAutoApp.java), for example, if the same ECR repositories are always used.
 
