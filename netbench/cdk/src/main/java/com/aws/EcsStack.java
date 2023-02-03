@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 package com.aws;
 
-import software.amazon.awscdk.services.ecr.IRepository;
-import software.amazon.awscdk.services.ecr.Repository;
-import software.amazon.awscdk.services.ecs.RepositoryImage;
 import software.constructs.Construct;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -120,22 +117,6 @@ class EcsStack extends Stack {
         ecrEnv.put("SCENARIO", props.getScenario());
         ecrEnv.put("PORT", "3000");  //Arbitrary port
 
-        IRepository ecrRepository = Repository.fromRepositoryName(this, stackType + "-ecr-repository",
-                props.getEcrUri().split(":", 2)[0].split("/", 2)[1]);
-
-        task.addToExecutionRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of(
-                        "ecr:GetAuthorizationToken",
-                        "ecr:BatchCheckLayerAvailability",
-                        "ecr:GetDownloadUrlForLayer",
-                        "ecr:BatchGetImage"
-                ))
-                .resources(List.of(ecrRepository.getRepositoryArn()))
-                .build());
-
-        RepositoryImage containerImage = ContainerImage.fromRegistry(props.getEcrUri());
-
         if (stackType.equals("server")) {
             PrivateDnsNamespace ecsNameSpace = PrivateDnsNamespace.Builder.create(this, stackType + "-namespace")
                 .name(stackType + "ecs.com") //Arbitrary name
@@ -184,7 +165,7 @@ class EcsStack extends Stack {
                     .build());
                     
             task.addContainer(stackType + "-driver", ContainerDefinitionOptions.builder()
-                .image(containerImage)
+                .image(ContainerImage.fromRegistry(props.getEcrUri()))
                 .environment(ecrEnv)
                 .memoryLimitMiB(2048)
                 .logging(LogDriver.awsLogs(AwsLogDriverProps.builder().logGroup(serviceLogGroup).streamPrefix(stackType + "-ecs-task").build()))
@@ -220,7 +201,7 @@ class EcsStack extends Stack {
             ecrEnv.put("LOCAL_IP", "0.0.0.0");
 
             ContainerDefinition clientContainer = task.addContainer(stackType + "-driver", ContainerDefinitionOptions.builder()
-                .image(containerImage)
+                .image(ContainerImage.fromRegistry(props.getEcrUri()))
                 .environment(ecrEnv)
                 .memoryLimitMiB(2048)
                 .logging(LogDriver.awsLogs(AwsLogDriverProps.builder().logRetention(RetentionDays.ONE_DAY).streamPrefix(stackType + "-ecs-task").build()))
